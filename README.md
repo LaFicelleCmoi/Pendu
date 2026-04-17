@@ -1,44 +1,60 @@
-# 🎉 Jeu du Pendu — Python
+# 🎪 Jeu du Pendu — Python
 
 ## 🧩 Description
 
-Ce projet est une version console du **jeu du pendu** écrite en **Python 3**.
-Le but est simple : deviner un mot anglais caché, lettre par lettre ou en proposant directement le mot entier, avant d'épuiser le nombre de tentatives disponibles.
+Deux versions du **jeu du pendu** en **Python 3** :
 
-Le jeu inclut une gestion de pseudo, un affichage dynamique du mot à deviner, un dessin ASCII du pendu qui évolue à chaque erreur, et l'historique des lettres déjà essayées.
+- 🖥️ **Console** ([Pendu.py](Pendu.py)) — dessin ASCII, pseudo, replay.
+- 🎨 **Interface graphique** ([pendu_gui.py](pendu_gui.py)) — tkinter, thème sombre Catppuccin, canvas animé, clavier cliquable et raccourcis clavier.
+
+Le but : deviner un mot anglais caché lettre par lettre, ou proposer directement le mot, avant d'épuiser les 6 vies.
 
 ---
 
 ## 🚀 Fonctionnalités
 
-- 🎭 Choix d'un **pseudo** ou jeu en mode **anonyme**
+- 🎭 Choix d'un **pseudo** (ou mode anonyme)
 - 🔠 Sélection **aléatoire d'un mot anglais** (4 à 10 lettres, alphabétique)
-- 💬 Affichage progressif du mot masqué (`_ _ _ _`)
-- 🪢 **Dessin ASCII du pendu** qui se construit à chaque erreur
-- 🧠 Gestion et affichage des **lettres déjà essayées**
-- ❌ Limite de **6 erreurs** (pendu classique)
-- 🔁 Possibilité de proposer directement le **mot complet**
-- ♻️ Option **rejouer** à la fin de chaque partie
-- 🎉 Messages personnalisés selon le résultat du joueur
+- 💬 Affichage progressif du mot masqué
+- 🪢 **Pendu animé** (ASCII en console, dessin canvas en GUI)
+- 🧠 Suivi des lettres déjà essayées (boutons colorés en GUI)
+- ❤️ **6 vies** (compte à rebours visuel en GUI)
+- ⌨️ **Raccourcis clavier** physiques dans l'interface graphique
+- 🔁 Rejouer à la fin de la partie
+- 🎉 Feedback visuel coloré (vert/jaune/rouge)
 
 ---
 
 ## 🧰 Prérequis
 
-Avant d'exécuter le script, assure-toi d'avoir installé :
-
 - Python **3.8 ou supérieur**
 - Le module `english_words`
+- Pour la GUI : `tkinter` (inclus avec Python sur la plupart des systèmes ; sur Debian/Ubuntu : `sudo apt install python3-tk`)
 
-### Installation du module requis
+---
+
+## 📦 Installation
+
+Sur les distributions récentes (Ubuntu 24+, Debian 12+), `pip` refuse l'installation globale (PEP 668). Utilise un environnement virtuel :
 
 ```bash
-pip install english-words
+cd Pendu
+python3 -m venv .venv
+source .venv/bin/activate        # sous Windows : .venv\Scripts\activate
+pip install -r requirements.txt
 ```
 
 ---
 
 ## ▶️ Lancer le jeu
+
+**Interface graphique (recommandé) :**
+
+```bash
+python pendu_gui.py
+```
+
+**Version console :**
 
 ```bash
 python Pendu.py
@@ -46,22 +62,10 @@ python Pendu.py
 
 ---
 
-## 🎮 Exemple de partie
+## 🎮 Aperçu GUI
 
-```
-BIENVENUE bienvenue joyeux pendu 🎉
-Voulez-vous un pseudo ? (y/n) 😁 y
-Entrez votre pseudo : Alex
-BIENVENU Alex
-
-     ------
-     |    |
-          |
-          |
-          |
-          |
-    ========
-Mot : _ _ _ _ _
-Tentatives restantes : 6
-Entre une lettre ou le mot 🔠 :
-```
+- Canvas avec le gibet et le pendu qui se construit à chaque erreur.
+- Clavier QWERTY cliquable : les touches passent en **vert** si trouvées, **rouge** sinon et sont désactivées.
+- Champ de saisie pour proposer le mot complet (`Entrée` pour valider).
+- Compteur de vies coloré (vert → jaune → rouge).
+- Bouton **Nouvelle partie** pour relancer.
