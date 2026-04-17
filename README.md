@@ -2,34 +2,31 @@
 
 ## 🧩 Description
 
-Deux versions du **jeu du pendu** en **Python 3** :
-
-- 🖥️ **Console** ([Pendu.py](Pendu.py)) — dessin ASCII, pseudo, replay.
-- 🎨 **Interface graphique** ([pendu_gui.py](pendu_gui.py)) — tkinter, thème sombre Catppuccin, canvas animé, clavier cliquable et raccourcis clavier.
-
+Version graphique du **jeu du pendu** écrite en **Python 3** avec **Tkinter**.
 Le but : deviner un mot anglais caché lettre par lettre, ou proposer directement le mot, avant d'épuiser les 6 vies.
+
+Interface soignée (thème sombre Catppuccin), pendu dessiné sur un canvas, clavier QWERTY cliquable et raccourcis clavier physiques.
 
 ---
 
 ## 🚀 Fonctionnalités
 
-- 🎭 Choix d'un **pseudo** (ou mode anonyme)
+- 🎭 Choix d'un **pseudo** (ou mode anonyme) via une fenêtre d'accueil
 - 🔠 Sélection **aléatoire d'un mot anglais** (4 à 10 lettres, alphabétique)
-- 💬 Affichage progressif du mot masqué
-- 🪢 **Pendu animé** (ASCII en console, dessin canvas en GUI)
-- 🧠 Suivi des lettres déjà essayées (boutons colorés en GUI)
-- ❤️ **6 vies** (compte à rebours visuel en GUI)
-- ⌨️ **Raccourcis clavier** physiques dans l'interface graphique
-- 🔁 Rejouer à la fin de la partie
-- 🎉 Feedback visuel coloré (vert/jaune/rouge)
+- 🪢 **Pendu dessiné** qui se construit à chaque erreur
+- ⌨️ **Clavier QWERTY cliquable** + raccourcis clavier physiques
+- 🟢🔴 Touches colorées (vert = trouvée, rouge = absente) et désactivées après usage
+- 📝 Champ pour proposer le **mot complet**
+- ❤️ Compteur de **vies** coloré (vert → jaune → rouge)
+- 🔁 Bouton **Nouvelle partie** pour relancer sans fermer la fenêtre
 
 ---
 
 ## 🧰 Prérequis
 
 - Python **3.8 ou supérieur**
+- `tkinter` (inclus avec Python sur la plupart des systèmes ; sur Debian/Ubuntu : `sudo apt install python3-tk`)
 - Le module `english_words`
-- Pour la GUI : `tkinter` (inclus avec Python sur la plupart des systèmes ; sur Debian/Ubuntu : `sudo apt install python3-tk`)
 
 ---
 
@@ -48,24 +45,6 @@ pip install -r requirements.txt
 
 ## ▶️ Lancer le jeu
 
-**Interface graphique (recommandé) :**
-
-```bash
-python pendu_gui.py
-```
-
-**Version console :**
-
 ```bash
 python Pendu.py
 ```
-
----
-
-## 🎮 Aperçu GUI
-
-- Canvas avec le gibet et le pendu qui se construit à chaque erreur.
-- Clavier QWERTY cliquable : les touches passent en **vert** si trouvées, **rouge** sinon et sont désactivées.
-- Champ de saisie pour proposer le mot complet (`Entrée` pour valider).
-- Compteur de vies coloré (vert → jaune → rouge).
-- Bouton **Nouvelle partie** pour relancer.
