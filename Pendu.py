@@ -1,7 +1,8 @@
+import os
 import random
 import tkinter as tk
+import unicodedata
 from tkinter import font as tkfont
-from tkinter import messagebox
 
 from english_words import get_english_words_set
 
@@ -22,12 +23,41 @@ OVERLAY = "#6c7086"
 MAX_WRONG = 6
 KEYBOARD_ROWS = ["QWERTYUIOP", "ASDFGHJKL", "ZXCVBNM"]
 
+LANGUAGES = {
+    "fr": {"flag": "🇫🇷", "label": "FR", "prompt": "Devine une lettre ou propose le mot !"},
+    "en": {"flag": "🇬🇧", "label": "EN", "prompt": "Guess a letter or propose the word!"},
+}
+DEFAULT_LANGUAGE = "en"
 
-def load_words(min_len=4, max_len=10):
-    return [
-        w for w in get_english_words_set(["web2"], lower=True)
-        if w.isalpha() and min_len <= len(w) <= max_len
-    ]
+WORDS_FR_FILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "words_fr.txt"
+)
+
+
+def _strip_accents(s):
+    nfd = unicodedata.normalize("NFD", s)
+    return "".join(c for c in nfd if unicodedata.category(c) != "Mn")
+
+
+def _filter_words(raw, min_len=4, max_len=10):
+    words = set()
+    for w in raw:
+        w = _strip_accents(w.strip().lower())
+        if w.isalpha() and min_len <= len(w) <= max_len:
+            words.add(w)
+    return sorted(words)
+
+
+def load_words_en():
+    return _filter_words(get_english_words_set(["web2"], lower=True))
+
+
+def load_words_fr():
+    try:
+        with open(WORDS_FR_FILE, encoding="utf-8") as f:
+            return _filter_words(f)
+    except FileNotFoundError:
+        return []
 
 
 class HangmanApp:
@@ -38,7 +68,13 @@ class HangmanApp:
         self.root.geometry("860x720")
         self.root.minsize(820, 700)
 
-        self.words = load_words()
+        self.words_by_lang = {
+            "en": load_words_en(),
+            "fr": load_words_fr(),
+        }
+        self.language = DEFAULT_LANGUAGE if self.words_by_lang[DEFAULT_LANGUAGE] else next(
+            (lg for lg, ws in self.words_by_lang.items() if ws), DEFAULT_LANGUAGE
+        )
         self.player = "anonyme"
         self.secret = ""
         self.display = []
@@ -46,6 +82,7 @@ class HangmanApp:
         self.wrong = 0
         self.game_over = False
         self.key_buttons = {}
+        self.lang_buttons = {}
 
         self._build_fonts()
         self._build_ui()
@@ -67,10 +104,14 @@ class HangmanApp:
             header, text="🎪 Le Pendu", font=self.title_font,
             fg=MAUVE, bg=BG,
         ).pack(side="left")
+
+        right_header = tk.Frame(header, bg=BG)
+        right_header.pack(side="right")
         self.player_label = tk.Label(
-            header, text="", font=self.label_font, fg=SUBTEXT, bg=BG,
+            right_header, text="", font=self.label_font, fg=SUBTEXT, bg=BG,
         )
-        self.player_label.pack(side="right")
+        self.player_label.pack(side="right", padx=(12, 0))
+        self._build_language_toggle(right_header)
 
         body = tk.Frame(self.root, bg=BG)
         body.pack(fill="both", expand=True, padx=24, pady=8)
@@ -131,6 +172,42 @@ class HangmanApp:
 
         # Raccourcis clavier physiques
         self.root.bind("<Key>", self._on_key)
+
+    def _build_language_toggle(self, parent):
+        frame = tk.Frame(parent, bg=BG)
+        frame.pack(side="right")
+        for code in ("fr", "en"):
+            info = LANGUAGES[code]
+            text = f"{info['flag']} {info['label']}"
+            btn = tk.Button(
+                frame, text=text, font=self.label_font,
+                bg=SURFACE, fg=TEXT,
+                activebackground=MAUVE, activeforeground=BG,
+                relief="flat", bd=0, cursor="hand2",
+                padx=10, pady=4,
+                command=lambda c=code: self._set_language(c),
+            )
+            if not self.words_by_lang.get(code):
+                btn.config(state="disabled")
+            btn.pack(side="left", padx=2)
+            self.lang_buttons[code] = btn
+        self._refresh_language_buttons()
+
+    def _refresh_language_buttons(self):
+        for code, btn in self.lang_buttons.items():
+            if str(btn["state"]) == "disabled":
+                continue
+            if code == self.language:
+                btn.config(bg=MAUVE, fg=BG)
+            else:
+                btn.config(bg=SURFACE, fg=TEXT)
+
+    def _set_language(self, code):
+        if code == self.language or not self.words_by_lang.get(code):
+            return
+        self.language = code
+        self._refresh_language_buttons()
+        self._new_game()
 
     def _build_keyboard(self):
         for row_idx, row in enumerate(KEYBOARD_ROWS):
@@ -194,7 +271,8 @@ class HangmanApp:
         self.root.wait_window(win)
 
     def _new_game(self):
-        self.secret = random.choice(self.words)
+        pool = self.words_by_lang[self.language]
+        self.secret = random.choice(pool)
         self.display = ["_"] * len(self.secret)
         self.guessed = set()
         self.wrong = 0
@@ -203,7 +281,7 @@ class HangmanApp:
         self.guess_entry.delete(0, tk.END)
         for btn in self.key_buttons.values():
             btn.config(state="normal", bg=SURFACE, fg=TEXT)
-        self._set_message("Devine une lettre ou propose le mot !", SUBTEXT)
+        self._set_message(LANGUAGES[self.language]["prompt"], SUBTEXT)
         self._redraw()
 
     def _guess_letter(self, letter):

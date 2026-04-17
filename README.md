@@ -3,7 +3,7 @@
 ## 🧩 Description
 
 Version graphique du **jeu du pendu** écrite en **Python 3** avec **Tkinter**.
-Le but : deviner un mot anglais caché lettre par lettre, ou proposer directement le mot, avant d'épuiser les 6 vies.
+Le but : deviner un mot caché (🇫🇷 français ou 🇬🇧 anglais, switchable en un clic) lettre par lettre, ou proposer directement le mot, avant d'épuiser les 6 vies.
 
 Interface soignée (thème sombre Catppuccin), pendu dessiné sur un canvas, clavier QWERTY cliquable et raccourcis clavier physiques.
 
@@ -12,7 +12,8 @@ Interface soignée (thème sombre Catppuccin), pendu dessiné sur un canvas, cla
 ## 🚀 Fonctionnalités
 
 - 🎭 Choix d'un **pseudo** (ou mode anonyme) via une fenêtre d'accueil
-- 🔠 Sélection **aléatoire d'un mot anglais** (4 à 10 lettres, alphabétique)
+- 🌍 **Toggle 🇫🇷 / 🇬🇧** dans l'en-tête pour basculer la langue des mots (relance une partie)
+- 🔠 Sélection **aléatoire d'un mot** (4 à 10 lettres, alphabétique, accents retirés)
 - 🪢 **Pendu dessiné** qui se construit à chaque erreur
 - ⌨️ **Clavier QWERTY cliquable** + raccourcis clavier physiques
 - 🟢🔴 Touches colorées (vert = trouvée, rouge = absente) et désactivées après usage
