@@ -1,7 +1,9 @@
+import json
 import os
 import random
 import tkinter as tk
 import unicodedata
+from pathlib import Path
 from tkinter import font as tkfont
 
 from english_words import get_english_words_set
@@ -29,9 +31,17 @@ LANGUAGES = {
 }
 DEFAULT_LANGUAGE = "en"
 
+DIFFICULTIES = {
+    "facile":    {"label": "🟢 Facile",    "range": (4, 6)},
+    "normal":    {"label": "🟡 Normal",    "range": (5, 8)},
+    "difficile": {"label": "🔴 Difficile", "range": (7, 10)},
+}
+DEFAULT_DIFFICULTY = "normal"
+
 WORDS_FR_FILE = os.path.join(
     os.path.dirname(os.path.abspath(__file__)), "words_fr.txt"
 )
+STATS_FILE = Path.home() / ".pendu_stats.json"
 
 
 def _strip_accents(s):
@@ -60,6 +70,24 @@ def load_words_fr():
         return []
 
 
+def load_stats():
+    default = {"wins": 0, "losses": 0, "streak": 0, "best_streak": 0}
+    try:
+        with open(STATS_FILE, encoding="utf-8") as f:
+            data = json.load(f)
+        return {**default, **{k: int(v) for k, v in data.items() if k in default}}
+    except (FileNotFoundError, json.JSONDecodeError, ValueError, OSError):
+        return default
+
+
+def save_stats(stats):
+    try:
+        with open(STATS_FILE, "w", encoding="utf-8") as f:
+            json.dump(stats, f)
+    except OSError:
+        pass
+
+
 class HangmanApp:
     def __init__(self, root):
         self.root = root
@@ -76,16 +104,21 @@ class HangmanApp:
             (lg for lg, ws in self.words_by_lang.items() if ws), DEFAULT_LANGUAGE
         )
         self.player = "anonyme"
+        self.difficulty = DEFAULT_DIFFICULTY
+        self.stats = load_stats()
         self.secret = ""
         self.display = []
         self.guessed = set()
         self.wrong = 0
         self.game_over = False
+        self.result_recorded = False
         self.key_buttons = {}
         self.lang_buttons = {}
+        self.diff_buttons = {}
 
         self._build_fonts()
         self._build_ui()
+        self._refresh_stats()
         self._show_welcome()
 
     def _build_fonts(self):
@@ -105,13 +138,15 @@ class HangmanApp:
             fg=MAUVE, bg=BG,
         ).pack(side="left")
 
-        right_header = tk.Frame(header, bg=BG)
-        right_header.pack(side="right")
         self.player_label = tk.Label(
-            right_header, text="", font=self.label_font, fg=SUBTEXT, bg=BG,
+            header, text="", font=self.label_font, fg=SUBTEXT, bg=BG,
         )
-        self.player_label.pack(side="right", padx=(12, 0))
-        self._build_language_toggle(right_header)
+        self.player_label.pack(side="right")
+
+        toolbar = tk.Frame(self.root, bg=BG)
+        toolbar.pack(fill="x", padx=24, pady=(0, 4))
+        self._build_language_toggle(toolbar)
+        self._build_difficulty_toggle(toolbar)
 
         body = tk.Frame(self.root, bg=BG)
         body.pack(fill="both", expand=True, padx=24, pady=8)
@@ -127,7 +162,13 @@ class HangmanApp:
         self.attempts_label = tk.Label(
             left, text="", font=self.label_font, fg=YELLOW, bg=BG,
         )
-        self.attempts_label.pack(pady=(12, 0))
+        self.attempts_label.pack(pady=(12, 4))
+
+        self.stats_label = tk.Label(
+            left, text="", font=self.small_font, fg=SUBTEXT, bg=BG,
+            justify="center",
+        )
+        self.stats_label.pack(pady=(0, 4))
 
         # Droite : mot, message, clavier, actions
         right = tk.Frame(body, bg=BG)
@@ -165,17 +206,28 @@ class HangmanApp:
             guess_frame, "Valider", BLUE, self._guess_word,
         ).pack(side="left", padx=(8, 0))
 
-        # Bouton nouvelle partie
+        # Actions : indice + nouvelle partie
+        actions = tk.Frame(right, bg=BG)
+        actions.pack(pady=(16, 0))
+        self.hint_button = self._make_button(
+            actions, "💡 Indice (-1 vie)", PEACH, self._use_hint,
+        )
+        self.hint_button.pack(side="left", padx=(0, 8))
         self._make_button(
-            right, "🔁 Nouvelle partie", MAUVE, self._new_game,
-        ).pack(pady=(16, 0))
+            actions, "🔁 Nouvelle partie", MAUVE, self._new_game,
+        ).pack(side="left")
 
         # Raccourcis clavier physiques
         self.root.bind("<Key>", self._on_key)
+        self.root.bind("<Control-n>", lambda _e: self._new_game())
+        self.root.bind("<Control-N>", lambda _e: self._new_game())
 
     def _build_language_toggle(self, parent):
         frame = tk.Frame(parent, bg=BG)
-        frame.pack(side="right")
+        frame.pack(side="left")
+        tk.Label(
+            frame, text="🌍", font=self.label_font, fg=SUBTEXT, bg=BG,
+        ).pack(side="left", padx=(0, 6))
         for code in ("fr", "en"):
             info = LANGUAGES[code]
             text = f"{info['flag']} {info['label']}"
@@ -208,6 +260,43 @@ class HangmanApp:
         self.language = code
         self._refresh_language_buttons()
         self._new_game()
+
+    def _build_difficulty_toggle(self, parent):
+        frame = tk.Frame(parent, bg=BG)
+        frame.pack(side="right")
+        tk.Label(
+            frame, text="🎯", font=self.label_font, fg=SUBTEXT, bg=BG,
+        ).pack(side="left", padx=(0, 6))
+        for code, info in DIFFICULTIES.items():
+            btn = tk.Button(
+                frame, text=info["label"], font=self.label_font,
+                bg=SURFACE, fg=TEXT,
+                activebackground=MAUVE, activeforeground=BG,
+                relief="flat", bd=0, cursor="hand2",
+                padx=10, pady=4,
+                command=lambda c=code: self._set_difficulty(c),
+            )
+            btn.pack(side="left", padx=2)
+            self.diff_buttons[code] = btn
+        self._refresh_difficulty_buttons()
+
+    def _refresh_difficulty_buttons(self):
+        for code, btn in self.diff_buttons.items():
+            if code == self.difficulty:
+                btn.config(bg=MAUVE, fg=BG)
+            else:
+                btn.config(bg=SURFACE, fg=TEXT)
+
+    def _set_difficulty(self, code):
+        if code == self.difficulty or code not in DIFFICULTIES:
+            return
+        self.difficulty = code
+        self._refresh_difficulty_buttons()
+        self._new_game()
+
+    def _available_words(self):
+        lo, hi = DIFFICULTIES[self.difficulty]["range"]
+        return [w for w in self.words_by_lang[self.language] if lo <= len(w) <= hi]
 
     def _build_keyboard(self):
         for row_idx, row in enumerate(KEYBOARD_ROWS):
@@ -266,21 +355,27 @@ class HangmanApp:
             self._new_game()
 
         entry.bind("<Return>", submit)
+        win.bind("<Escape>", submit)
         self._make_button(win, "C'est parti !", GREEN, submit).pack(pady=16)
 
         self.root.wait_window(win)
 
     def _new_game(self):
-        pool = self.words_by_lang[self.language]
+        pool = self._available_words()
+        if not pool:
+            self._set_message("Aucun mot disponible pour cette combinaison.", RED)
+            return
         self.secret = random.choice(pool)
         self.display = ["_"] * len(self.secret)
         self.guessed = set()
         self.wrong = 0
         self.game_over = False
+        self.result_recorded = False
         self.guess_entry.config(state="normal")
         self.guess_entry.delete(0, tk.END)
         for btn in self.key_buttons.values():
             btn.config(state="normal", bg=SURFACE, fg=TEXT)
+        self.hint_button.config(state="normal")
         self._set_message(LANGUAGES[self.language]["prompt"], SUBTEXT)
         self._redraw()
 
@@ -332,6 +427,32 @@ class HangmanApp:
         if len(key) == 1 and key.isalpha():
             self._guess_letter(key)
 
+    def _use_hint(self):
+        if self.game_over:
+            return
+        # Ne pas permettre un indice qui terminerait la partie par défaite
+        if self.wrong + 1 >= MAX_WRONG:
+            self._set_message("Indice impossible : trop dangereux à ce stade.", YELLOW)
+            return
+        missing = [
+            c for i, c in enumerate(self.secret)
+            if self.display[i] == "_" and c not in self.guessed
+        ]
+        if not missing:
+            return
+        letter = random.choice(missing)
+        self.guessed.add(letter)
+        for i, c in enumerate(self.secret):
+            if c == letter:
+                self.display[i] = letter
+        btn = self.key_buttons.get(letter)
+        if btn:
+            btn.config(bg=BLUE, fg=BG, state="disabled", disabledforeground=BG)
+        self.wrong += 1
+        self._set_message(f"💡 Indice : la lettre '{letter.upper()}' est révélée (-1 vie).", BLUE)
+        self._redraw()
+        self._check_end()
+
     def _check_end(self):
         if "_" not in self.display:
             self._win()
@@ -344,6 +465,7 @@ class HangmanApp:
             f"🎉 Bravo {self.player} ! Le mot était '{self.secret}'.", GREEN,
         )
         self._disable_all_keys()
+        self._record_result(win=True)
 
     def _lose(self):
         self.game_over = True
@@ -351,11 +473,39 @@ class HangmanApp:
             f"💀 Perdu {self.player}. Le mot était '{self.secret}'.", RED,
         )
         self._disable_all_keys()
+        self._record_result(win=False)
+
+    def _record_result(self, win):
+        if self.result_recorded:
+            return
+        self.result_recorded = True
+        if win:
+            self.stats["wins"] += 1
+            self.stats["streak"] += 1
+            if self.stats["streak"] > self.stats["best_streak"]:
+                self.stats["best_streak"] = self.stats["streak"]
+        else:
+            self.stats["losses"] += 1
+            self.stats["streak"] = 0
+        save_stats(self.stats)
+        self._refresh_stats()
+
+    def _refresh_stats(self):
+        s = self.stats
+        total = s["wins"] + s["losses"]
+        rate = f"{(s['wins'] / total * 100):.0f}%" if total else "—"
+        self.stats_label.config(
+            text=(
+                f"🏆 {s['wins']}   💀 {s['losses']}   🎯 {rate}\n"
+                f"🔥 Série : {s['streak']}   ⭐ Record : {s['best_streak']}"
+            )
+        )
 
     def _disable_all_keys(self):
         for btn in self.key_buttons.values():
             btn.config(state="disabled")
         self.guess_entry.config(state="disabled")
+        self.hint_button.config(state="disabled")
 
     def _set_message(self, text, color):
         self.message_label.config(text=text, fg=color)
@@ -370,6 +520,11 @@ class HangmanApp:
         # Mot masqué : espace visuel entre les lettres
         shown = "  ".join(c.upper() if c != "_" else "_" for c in self.display)
         self.word_label.config(text=shown)
+        # Bouton indice : désactive si un indice terminerait la partie
+        if not self.game_over and self.wrong + 1 < MAX_WRONG:
+            self.hint_button.config(state="normal")
+        else:
+            self.hint_button.config(state="disabled")
         self._draw_hangman()
 
     def _draw_hangman(self):

@@ -12,11 +12,14 @@ Interface soignée (thème sombre Catppuccin), pendu dessiné sur un canvas, cla
 ## 🚀 Fonctionnalités
 
 - 🎭 Choix d'un **pseudo** (ou mode anonyme) via une fenêtre d'accueil
-- 🌍 **Toggle 🇫🇷 / 🇬🇧** dans l'en-tête pour basculer la langue des mots (relance une partie)
-- 🔠 Sélection **aléatoire d'un mot** (4 à 10 lettres, alphabétique, accents retirés)
+- 🌍 **Toggle 🇫🇷 / 🇬🇧** pour basculer la langue des mots (relance une partie)
+- 🎯 **Trois niveaux de difficulté** (Facile 4-6 / Normal 5-8 / Difficile 7-10 lettres)
+- 💡 **Bouton indice** qui révèle une lettre au prix d'une vie (désactivé si ça tuerait le joueur)
+- 📊 **Stats persistées** (victoires, défaites, % de réussite, série en cours et record), sauvegardées dans `~/.pendu_stats.json`
+- 🔠 Sélection **aléatoire d'un mot** (alphabétique, accents retirés)
 - 🪢 **Pendu dessiné** qui se construit à chaque erreur
-- ⌨️ **Clavier QWERTY cliquable** + raccourcis clavier physiques
-- 🟢🔴 Touches colorées (vert = trouvée, rouge = absente) et désactivées après usage
+- ⌨️ **Clavier QWERTY cliquable** + raccourcis clavier physiques, **Ctrl+N** pour nouvelle partie
+- 🟢🔴 Touches colorées (vert = trouvée, rouge = absente, bleu = indice) et désactivées après usage
 - 📝 Champ pour proposer le **mot complet**
 - ❤️ Compteur de **vies** coloré (vert → jaune → rouge)
 - 🔁 Bouton **Nouvelle partie** pour relancer sans fermer la fenêtre
